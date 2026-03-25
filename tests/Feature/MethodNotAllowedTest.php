@@ -6,20 +6,23 @@ namespace Tests\Feature;
 
 use PHPUnit\Framework\TestCase;
 
-final class HealthEndpointTest extends TestCase
+final class MethodNotAllowedTest extends TestCase
 {
-    public function test_health_endpoint_returns_expected_json(): void
+    public function test_known_path_with_wrong_method_returns_405_json(): void
     {
-        [$statusCode, $headers, $body] = $this->dispatch('/health');
+        [$statusCode, $headers, $body] = $this->dispatch('POST', '/api/v1/ping');
 
-        self::assertSame(200, $statusCode);
+        self::assertSame(405, $statusCode);
         self::assertContains('Content-Type: application/json; charset=utf-8', $headers);
+        self::assertContains('Allow: GET', $headers);
         self::assertJson($body);
         self::assertSame(
             [
-                'status' => 'ok',
-                'app' => 'Folio',
-                'env' => 'local',
+                'error' => [
+                    'code' => 'METHOD_NOT_ALLOWED',
+                    'message' => 'Method not allowed',
+                    'allowed_methods' => ['GET'],
+                ],
             ],
             json_decode($body, true, 512, JSON_THROW_ON_ERROR)
         );
@@ -28,9 +31,9 @@ final class HealthEndpointTest extends TestCase
     /**
      * @return array{0:int,1:list<string>,2:string}
      */
-    private function dispatch(string $uri): array
+    private function dispatch(string $method, string $uri): array
     {
-        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER['REQUEST_METHOD'] = $method;
         $_SERVER['REQUEST_URI'] = $uri;
         $_SERVER['HTTP_HOST'] = 'localhost';
 

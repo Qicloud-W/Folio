@@ -23,6 +23,7 @@ final class SmokeTest extends TestCase
         self::assertSame(200, $result['status']);
         self::assertSame('ok', $result['body']['status']);
         self::assertSame('Folio', $result['body']['app']);
+        self::assertSame('local', $result['body']['env']);
     }
 
     public function testPingRouteReturnsPongPayload(): void
@@ -41,6 +42,15 @@ final class SmokeTest extends TestCase
         self::assertSame(404, $result['status']);
         self::assertSame('NOT_FOUND', $result['body']['error']['code']);
         self::assertSame('Route not found', $result['body']['error']['message']);
+    }
+
+    public function testKnownPathWithWrongMethodReturns405(): void
+    {
+        $result = $this->runRequest('POST', '/api/v1/ping');
+
+        self::assertSame(405, $result['status']);
+        self::assertSame('METHOD_NOT_ALLOWED', $result['body']['error']['code']);
+        self::assertSame(['GET'], $result['body']['error']['allowed_methods']);
     }
 
     /** @return array{status:int,body:array<string,mixed>} */

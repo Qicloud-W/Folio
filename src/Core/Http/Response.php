@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Folio\Core\Http;
 
+use JsonException;
+use Throwable;
+
 final class Response
 {
     public function __construct(
@@ -16,6 +19,22 @@ final class Response
     public static function json(array $payload, int $status = 200, array $headers = []): self
     {
         return new self($payload, $status, array_replace(['Content-Type' => 'application/json; charset=utf-8'], $headers));
+    }
+
+    public static function safeJson(array $payload, int $status = 200, array $headers = []): self
+    {
+        try {
+            json_encode($payload, JSON_THROW_ON_ERROR);
+
+            return self::json($payload, $status, $headers);
+        } catch (Throwable) {
+            return new self([
+                'error' => [
+                    'code' => 'RESPONSE_SERIALIZATION_ERROR',
+                    'message' => 'Failed to encode JSON response',
+                ],
+            ], 500, array_replace(['Content-Type' => 'application/json; charset=utf-8'], $headers));
+        }
     }
 
     public function status(): int
@@ -41,6 +60,11 @@ final class Response
             header(sprintf('%s: %s', $name, $value));
         }
 
-        echo json_encode($this->payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        try {
+            echo json_encode($this->payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            http_response_code(500);
+            echo '{"error":{"code":"RESPONSE_SERIALIZATION_ERROR","message":"Failed to encode JSON response"}}';
+        }
     }
 }
