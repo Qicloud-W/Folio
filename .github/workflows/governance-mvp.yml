@@ -1,25 +1,73 @@
 name: governance-mvp
 
 on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, reopened]
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
 jobs:
-  pr-body-check:
+  issue-governance-check:
+    if: github.event_name == 'issues'
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR body sections
+      - name: Check issue title/body/labels
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
         run: |
+          set -euo pipefail
+
+          test -n "$ISSUE_TITLE"
+          echo "$ISSUE_BODY" | grep -Eq '背景|Background'
+          echo "$ISSUE_BODY" | grep -Eq '目标|Goal'
+          echo "$ISSUE_BODY" | grep -Eq '验收标准|Acceptance'
+
+          echo "$ISSUE_LABELS" | grep -Eq '(^|,)type/'
+          echo "$ISSUE_LABELS" | grep -Eq '(^|,)priority/'
+          echo "$ISSUE_LABELS" | grep -Eq '(^|,)status/'
+          echo "$ISSUE_LABELS" | grep -Eq '(^|,)risk/'
+
+          if echo "$ISSUE_LABELS" | grep -Eq '(^|,)status/blocked(,|$)'; then
+            echo "$ISSUE_BODY" | grep -Eq 'blocker.reason|阻塞原因'
+            echo "$ISSUE_BODY" | grep -Eq 'blocker.owner|阻塞责任人'
+            echo "$ISSUE_BODY" | grep -Eq 'blocker.unblock_condition|解除条件'
+            echo "$ISSUE_BODY" | grep -Eq 'blocker.next_sync_at|下次同步时间'
+          fi
+
+  pr-governance-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title/body/labels
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+
+          echo "$PR_TITLE" | grep -Eq '^(feat|fix|docs|refactor|test|chore|build|ci|perf|revert|governance)(\(.+\))?: .+'
           echo "$PR_BODY" | grep '## 变更摘要'
           echo "$PR_BODY" | grep '## 为什么改'
           echo "$PR_BODY" | grep '## 如何验证'
           echo "$PR_BODY" | grep '## 风险与兼容性'
+          echo "$PR_BODY" | grep -Eq '关联 issue[:：][[:space:]]*#?[0-9]+'
+          echo "$PR_BODY" | grep -Eq '状态[:：][[:space:]]*(draft|triaged|ready|in-progress|blocked|in-review|done|closed)'
+          echo "$PR_BODY" | grep -Eq '风险[:：][[:space:]]*(low|medium|high)'
+
+          if [ -n "$PR_LABELS" ]; then
+            echo "$PR_LABELS" | grep -Eq '(^|,)risk/'
+          fi
 
   state-machine-file-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Ensure governance state machine exists
-        run: test -f docs/governance-state-machine.yaml
+      - name: Ensure governance files exist
+        run: |
+          set -euo pipefail
+          test -f docs/governance-state-machine.yaml
+          test -f docs/governance-automation-mvp.md
+          test -f docs/governance-labels-and-status.md

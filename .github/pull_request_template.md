@@ -1,6 +1,8 @@
 ## 变更摘要
 
 - 关联 issue：#
+- 状态：in-progress
+- 风险：low
 
 ## 为什么改
 
