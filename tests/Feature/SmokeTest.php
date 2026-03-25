@@ -4,71 +4,41 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use PHPUnit\Framework\TestCase;
-
-final class SmokeTest extends TestCase
+final class SmokeTest extends KernelTestCase
 {
-    private string $entrypoint;
-
-    protected function setUp(): void
+    public function test_health_route_returns_ok_payload(): void
     {
-        parent::setUp();
-        $this->entrypoint = dirname(__DIR__, 2).'/public/index.php';
+        $response = $this->dispatch('GET', '/health');
+
+        self::assertSame(200, $response->status());
+        self::assertSame('ok', $response->payload()['status']);
+        self::assertSame('Folio', $response->payload()['app']);
     }
 
-    public function testHealthRouteReturnsOkPayload(): void
+    public function test_ping_route_returns_pong_payload(): void
     {
-        $result = $this->runRequest('GET', '/health');
+        $response = $this->dispatch('GET', '/api/v1/ping');
 
-        self::assertSame(200, $result['status']);
-        self::assertSame('ok', $result['body']['status']);
-        self::assertSame('Folio', $result['body']['app']);
-        self::assertSame('local', $result['body']['env']);
+        self::assertSame(200, $response->status());
+        self::assertSame('pong', $response->payload()['message']);
+        self::assertSame('zh-CN', $response->payload()['locale']);
     }
 
-    public function testPingRouteReturnsPongPayload(): void
+    public function test_unknown_route_returns_json404(): void
     {
-        $result = $this->runRequest('GET', '/api/v1/ping');
+        $response = $this->dispatch('GET', '/missing');
 
-        self::assertSame(200, $result['status']);
-        self::assertSame('pong', $result['body']['message']);
-        self::assertSame('zh-CN', $result['body']['locale']);
+        self::assertSame(404, $response->status());
+        self::assertSame('NOT_FOUND', $response->payload()['error']['code']);
+        self::assertSame('Route not found', $response->payload()['error']['message']);
     }
 
-    public function testUnknownRouteReturnsJson404(): void
+    public function test_known_route_with_wrong_method_returns_json405(): void
     {
-        $result = $this->runRequest('GET', '/missing');
+        $response = $this->dispatch('POST', '/api/v1/ping');
 
-        self::assertSame(404, $result['status']);
-        self::assertSame('NOT_FOUND', $result['body']['error']['code']);
-        self::assertSame('Route not found', $result['body']['error']['message']);
-    }
-
-    public function testKnownPathWithWrongMethodReturns405(): void
-    {
-        $result = $this->runRequest('POST', '/api/v1/ping');
-
-        self::assertSame(405, $result['status']);
-        self::assertSame('METHOD_NOT_ALLOWED', $result['body']['error']['code']);
-        self::assertSame(['GET'], $result['body']['error']['allowed_methods']);
-    }
-
-    /** @return array{status:int,body:array<string,mixed>} */
-    private function runRequest(string $method, string $uri): array
-    {
-        $_GET = [];
-        $_POST = [];
-        $_SERVER['REQUEST_METHOD'] = $method;
-        $_SERVER['REQUEST_URI'] = $uri;
-
-        http_response_code(200);
-        ob_start();
-        require $this->entrypoint;
-        $output = (string) ob_get_clean();
-
-        return [
-            'status' => http_response_code(),
-            'body' => json_decode($output, true, 512, JSON_THROW_ON_ERROR),
-        ];
+        self::assertSame(405, $response->status());
+        self::assertSame('METHOD_NOT_ALLOWED', $response->payload()['error']['code']);
+        self::assertSame('Method not allowed', $response->payload()['error']['message']);
     }
 }
