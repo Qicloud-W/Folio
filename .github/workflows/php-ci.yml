@@ -1,0 +1,38 @@
+name: php-ci
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+      - 'governance/**'
+      - 'pr-*'
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  test-and-style:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run test suite
+        run: composer test
+
+      - name: Run code style check
+        run: composer cs:check
