@@ -2,32 +2,31 @@
 
 declare(strict_types=1);
 
-header('Content-Type: application/json; charset=utf-8');
+use Folio\Core\Http\Request;
+use Folio\Core\Kernel;
 
-$path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+require_once dirname(__DIR__).'/src/Core/Support/helpers.php';
 
-if ($path === '/health') {
-    http_response_code(200);
-    echo json_encode([
-        'status' => 'ok',
-        'app' => 'Folio',
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    return;
-}
+spl_autoload_register(static function (string $class): void {
+    $prefixes = [
+        'Folio\\' => dirname(__DIR__).'/src/',
+        'App\\' => dirname(__DIR__).'/app/',
+    ];
 
-if ($path === '/api/v1/ping') {
-    http_response_code(200);
-    echo json_encode([
-        'message' => 'pong',
-        'locale' => 'zh-CN',
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    return;
-}
+    foreach ($prefixes as $prefix => $baseDir) {
+        if (!str_starts_with($class, $prefix)) {
+            continue;
+        }
 
-http_response_code(404);
-echo json_encode([
-    'error' => [
-        'code' => 'NOT_FOUND',
-        'message' => 'Route not found',
-    ],
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $relative = substr($class, strlen($prefix));
+        $path = $baseDir.str_replace('\\', '/', $relative).'.php';
+
+        if (is_file($path)) {
+            require_once $path;
+        }
+    }
+});
+
+$request = Request::capture();
+$response = (new Kernel(dirname(__DIR__)))->handle($request);
+$response->send();
