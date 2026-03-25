@@ -89,6 +89,20 @@ composer test
 - 异常处理仍需统一封装
 - 当前测试依赖本机具备 PHP / Composer
 
+## 治理基线（新增）
+
+仓库已补充第一轮治理产物（MVP）：
+
+- `docs/governance-development-flow.md`
+- `docs/governance-issue-lifecycle.md`
+- `docs/governance-change-policy.md`
+- `docs/governance-blocker-policy.md`
+- `docs/governance-labels-and-status.md`
+- `docs/governance-automation-mvp.md`
+- `docs/governance-state-machine.yaml`
+
+这些内容用于为后续自动检查、自动派单、自动 merge / release 门禁打地基；当前仅落地 MVP，不代表完整自动编排已实现。
+
 ## 路线图（首轮）
 
 - `0.1.0-alpha`：最小可跑通骨架 + 治理结构

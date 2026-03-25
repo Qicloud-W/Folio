@@ -1,0 +1,25 @@
+name: governance-mvp
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  pr-body-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR body sections
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "$PR_BODY" | grep '## 变更摘要'
+          echo "$PR_BODY" | grep '## 为什么改'
+          echo "$PR_BODY" | grep '## 如何验证'
+          echo "$PR_BODY" | grep '## 风险与兼容性'
+
+  state-machine-file-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure governance state machine exists
+        run: test -f docs/governance-state-machine.yaml
