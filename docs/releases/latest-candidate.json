@@ -1,0 +1,9 @@
+{
+  "release_candidate": false,
+  "candidate_count": 0,
+  "items": [],
+  "blockers": [],
+  "commit": "",
+  "run_url": "",
+  "notes_path": "docs/releases/latest-candidate.md"
+}
