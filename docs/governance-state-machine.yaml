@@ -1,0 +1,80 @@
+version: 1
+name: folio-governance-mvp
+updated_at: 2026-03-26
+issue:
+  initial: draft
+  terminal:
+    - done
+    - closed
+  states:
+    draft:
+      label: status/draft
+      description: 信息未完整，待补充
+      transitions:
+        - triaged
+        - closed
+    triaged:
+      label: status/triaged
+      description: 已分类，待确认优先级与归属
+      transitions:
+        - ready
+        - closed
+    ready:
+      label: status/ready
+      description: 范围与验收标准明确，可开始执行
+      transitions:
+        - in_progress
+        - blocked
+        - closed
+    in_progress:
+      label: status/in-progress
+      description: 已开始开发或处理
+      transitions:
+        - blocked
+        - in_review
+        - closed
+    blocked:
+      label: status/blocked
+      description: 存在明确阻断，需补 blocker 信息
+      required_fields:
+        - blocker.reason
+        - blocker.owner
+        - blocker.unblock_condition
+        - blocker.next_sync_at
+      transitions:
+        - ready
+        - in_progress
+        - closed
+    in_review:
+      label: status/in-review
+      description: 已提交待审产物
+      transitions:
+        - in_progress
+        - done
+        - closed
+    done:
+      label: status/done
+      description: 已完成并收尾
+      transitions:
+        - in_progress
+        - closed
+    closed:
+      label: status/closed
+      description: 明确不做、重复或失效
+      transitions: []
+metadata:
+  recommended_fields:
+    - type
+    - priority
+    - status
+    - assignee
+    - acceptance
+    - related_pr
+  labels:
+    type_prefix: type/
+    priority_prefix: priority/
+    status_prefix: status/
+    risk_prefix: risk/
+  automation_notes:
+    - 本文件用于后续 GitHub Actions / bot / 派单系统消费
+    - 当前仅作为治理基线，不表示完整自动执行已上线

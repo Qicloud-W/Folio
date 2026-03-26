@@ -1,0 +1,41 @@
+name: 功能需求
+description: 提交新功能或能力建设需求
+labels: ["type/feature", "status/draft"]
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: 这件事为什么要做？
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 本 issue 想达成什么结果？
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 用可检查的方式写清楚什么算完成
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      options:
+        - p0
+        - p1
+        - p2
+        - p3
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 依赖、风险、参考资料等
