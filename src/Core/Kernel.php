@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Folio\Core;
 
+use Folio\Core\Config\ConfigRepository;
+use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Foundation\Application;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
@@ -26,13 +28,13 @@ final class Kernel
     public function report(Throwable $exception, bool $debug = false): Response
     {
         if ($debug) {
-            $this->app->instance('config', new \Folio\Core\Config\ConfigRepository([
+            $this->app->instance('config', new ConfigRepository([
                 'app' => ['debug' => true],
             ]));
         }
 
-        /** @var \Folio\Core\Contracts\Debug\ExceptionHandler $handler */
-        $handler = $this->app->make(\Folio\Core\Contracts\Debug\ExceptionHandler::class);
+        /** @var ExceptionHandler $handler */
+        $handler = $this->app->make(ExceptionHandler::class);
         $handler->report($exception);
 
         return $handler->render(new Request('GET', '/'), $exception);

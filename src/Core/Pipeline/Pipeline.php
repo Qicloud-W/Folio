@@ -6,6 +6,7 @@ namespace Folio\Core\Pipeline;
 
 use Closure;
 use Folio\Core\Contracts\Container\Container;
+use RuntimeException;
 
 final class Pipeline
 {
@@ -53,6 +54,6 @@ final class Pipeline
             return $pipe($passable, $stack);
         }
 
-        throw new \RuntimeException('Pipeline pipe is not callable.');
+        throw new RuntimeException('Pipeline pipe is not callable.');
     }
 }

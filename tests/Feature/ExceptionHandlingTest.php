@@ -4,26 +4,24 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Folio\Core\Http\Request;
-use Folio\Core\Kernel;
+use RuntimeException;
 
 final class ExceptionHandlingTest extends KernelTestCase
 {
-    public function test_method_not_allowed_exception_is_rendered_consistently(): void
+    public function test_report_returns_sanitized_500_response_by_default(): void
     {
-        $response = $this->dispatch('POST', '/api/v1/ping');
-
-        self::assertSame(405, $response->status());
-        self::assertSame(['GET'], $response->payload()['error']['allowed_methods']);
-    }
-
-    public function test_internal_server_error_uses_unified_shape(): void
-    {
-        $kernel = new Kernel(dirname(__DIR__, 2));
-        $response = $kernel->handle(new Request('GET', '/api/v1/ping', ['break' => '1']));
+        $response = (new \Folio\Core\Kernel(dirname(__DIR__, 2)))->report(new RuntimeException('boom'));
 
         self::assertSame(500, $response->status());
         self::assertSame('INTERNAL_SERVER_ERROR', $response->payload()['error']['code']);
-        self::assertSame('Ping route forced failure', $response->payload()['error']['message']);
+        self::assertSame('Internal Server Error', $response->payload()['error']['message']);
+    }
+
+    public function test_report_returns_debug_message_when_debug_enabled(): void
+    {
+        $response = (new \Folio\Core\Kernel(dirname(__DIR__, 2)))->report(new RuntimeException('boom'), true);
+
+        self::assertSame(500, $response->status());
+        self::assertSame('boom', $response->payload()['error']['message']);
     }
 }

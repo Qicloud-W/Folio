@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Folio\Core\Providers;
 
-use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Folio\Core\Routing\Router;
 use Folio\Core\Support\ServiceProvider;
