@@ -163,8 +163,11 @@ CI 当前会执行：
 - `docs/governance-labels-and-status.md`
 - `docs/governance-automation-mvp.md`
 - `docs/governance-state-machine.yaml`
+- `docs/governance-exec-mvp.md`
+- `.github/workflows/governance-exec-mvp.yml`
+- `scripts/governance/*.py`
 
-这些内容用于为后续自动检查、自动派单、自动 merge / release 门禁打地基；当前仅落地 MVP，不代表完整自动编排已实现。
+这些内容用于为后续自动检查、自动派单、自动 merge / release 门禁打地基；当前已落第一轮执行层 MVP：最小 merge gate、issue 路由骨架、release candidate 准备逻辑已可运行，但仍不代表完整自动编排已实现。
 
 ## 路线图（首轮）
 
