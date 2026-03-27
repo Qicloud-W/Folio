@@ -72,11 +72,11 @@ jobs:
         id: gate
         run: |
           gate=$(python3 - <<'PY'
-import json
-from pathlib import Path
-print(json.loads(Path('merge_gate_result.json').read_text())['gate'])
-PY
-)
+          import json
+          from pathlib import Path
+          print(json.loads(Path('merge_gate_result.json').read_text())['gate'])
+          PY
+          )
           echo "gate=$gate" >> "$GITHUB_OUTPUT"
       - name: Upsert merge gate comment
         env:

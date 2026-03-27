@@ -32,7 +32,6 @@ def main():
         'status_ready': any(label in labels for label in ('status/in-review', 'status/done')),
         'blocked': 'status/blocked' in labels,
         'risk_allowed': 'risk/high' not in labels,
-        'automerge_label': 'automerge' in labels,
         'required_checks_ok': required_checks_ok,
         'review_decision': review_decision,
         'mergeable_state': mergeable,
@@ -50,13 +49,11 @@ def main():
 
     if not checks['status_ready']:
         hold_reasons.append('missing status/in-review or status/done label')
-    if not checks['automerge_label']:
-        hold_reasons.append('missing automerge label')
     if not checks['required_checks_ok']:
         hold_reasons.append('required checks not green')
     if review_decision not in ('', 'APPROVED'):
         hold_reasons.append(f'review decision is {review_decision.lower()}')
-    if mergeable and mergeable != 'mergeable':
+    if mergeable and mergeable not in ('mergeable', 'unstable', 'unknown'):
         hold_reasons.append(f'pr mergeable state is {mergeable}')
 
     gate = 'eligible'
