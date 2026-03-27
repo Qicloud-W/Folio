@@ -2,27 +2,54 @@
 
 ## 结论
 
-当前仓库已从“静态 index.php 占位”推进到“最小可跑通内核链路雏形”。方向基本正确，尚未偏离轻量骨架目标，但仍需尽快补齐自动化与边界约束。
+当前 `main` 已经从“最小可跑通骨架”推进到“0.2.x-alpha 可运行内核”。
 
-## 已完成正向结果
+这不是成熟框架，也不是只有静态演示接口的 0.1 骨架；更准确地说，当前仓库已经具备：可运行 HTTP 主链路、middleware pipeline、基础 container/provider 装配、统一 JSON 异常出口，以及最小 CI / 治理 / 测试基线。
 
-- 引入 `Kernel / Router / Request / Response` 最小主链路。
-- 引入 `ConfigLoader + Env`，`config/*.php` 可统一读取。
-- 预留 `resources/lang/zh-CN` 与简单 `Lang` 读取能力。
-- `public/index.php` 从硬编码分支切换为内核启动入口。
-- README 已需要跟上，否则代码与文档会脱节。
+## 当前 main 已确认事实
 
-## 发现的问题
+- `public/index.php` 是唯一 public HTTP 入口。
+- `Folio\Core\Foundation\Application` 是当前对外应用 facade。
+- `routes/api.php` 已接入真实加载。
+- `/health`、`/api/v1/ping`、404、405、500 已统一到 JSON 行为。
+- 已存在全局 middleware pipeline，并覆盖顺序执行与短路返回场景。
+- 已存在基础容器交互面：`bind()` / `singleton()` / `instance()` / `make()` / `bound()`。
+- 已存在 provider 注册与 boot 生命周期初版。
+- 已有 PHPUnit、CS Fixer、GitHub Actions PHP CI 与治理检查。
 
-1. 目前没有 Composer 安装依赖与 CI 实跑，测试只能做静态/有限动态验证。
-2. 路由仍是代码内注册，`routes/api.php` 尚未接入真实加载。
-3. `Response::send()` 使用 `JSON_THROW_ON_ERROR`，未来需要统一异常兜底。
-4. `Env` 解析很轻，只适合作为 MVP；复杂 `.env` 语法还未覆盖。
-5. 分支治理、版本节奏、CI 徽章与状态说明还未形成闭环。
+## 主要风险与未收口点
+
+1. **runtime 内部主线仍在收口**
+   - `src/Core/Application/Application.php`
+   - `src/Core/Kernel.php`
+   - `src/Core/Foundation/HttpKernel.php`
+   之间的最终职责边界还没完全定稿。
+
+2. **alpha 对外边界应冻结，内部实现不应冒充稳定 ABI**
+   - README 和其余文档不该把某一条内部实现路径写成“最终唯一内核”。
+
+3. **路由能力仍然是 alpha 最小集**
+   - 当前稳定的是 `routes/api.php` 入口、404/405 口径与统一 `Response` 收敛。
+   - 参数路由、路由分组、命名路由、控制器映射都还不该宣称已稳定。
+
+4. **容器 API 需要继续克制**
+   - 对外只该承诺 `bind()` / `singleton()` / `instance()` / `make()` / `bound()`。
+   - `set()` / `has()` 一类实现细节不该继续外扩成公开口径。
+
+## 审计判断
+
+### 已经可以对外说的
+- Folio 当前是 0.2.x-alpha 可运行内核。
+- 它已经有 middleware、基础 container/provider、JSON exception 边界和 CI 治理基线。
+- 它适合继续围绕 alpha 边界收口，而不是再把文档写回 0.1 骨架时代。
+
+### 现在还不能对外说的
+- runtime 内部实现已经完全唯一化。
+- 路由、扩展、基础设施已经达到成熟框架级别。
+- alpha 之外的能力已经可以当作稳定承诺。
 
 ## 建议
 
-- 分支：继续使用 `main` + feature 分支，首个可演示版本打 `0.1.0-alpha.1`。
-- CI：补一个最小 GitHub Actions，先做 `composer validate`、`phpunit`、代码风格检查。
-- 命名：当前 `src/Core/*` 基本统一，保持住，别引入花里胡哨的目录层级。
-- 版本：下一刀应该是异常处理 + route 文件加载 + 更稳的测试 harness，而不是过早加容器花活。
+- README、roadmap、architecture、audit 统一只写当前 main 真相。
+- 所有 0.2.x-alpha 对外材料统一成“冻结对外边界，不冻结唯一内部实现”。
+- 后续若继续收口 runtime，实现可以改，但外部口径不能再来回摇摆。
