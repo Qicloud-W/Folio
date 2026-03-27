@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use Folio\Core\Foundation\Application;
 use Folio\Core\Http\Request;
-use Folio\Core\Kernel;
 
 require_once dirname(__DIR__).'/src/Core/Support/helpers.php';
 
@@ -27,6 +27,6 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-$request = Request::capture();
-$response = (new Kernel(dirname(__DIR__)))->handle($request);
+$app = Application::configure(dirname(__DIR__))->bootstrap();
+$response = $app->handle(Request::capture());
 $response->send();

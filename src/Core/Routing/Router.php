@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Folio\Core\Routing;
 
 use Closure;
+use Folio\Core\Exceptions\MethodNotAllowedHttpException;
+use Folio\Core\Exceptions\NotFoundHttpException;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 
@@ -30,34 +32,14 @@ final class Router
         $handler = $this->routes[$method][$path] ?? null;
 
         if ($handler instanceof Closure) {
-            try {
-                return $handler($request);
-            } catch (\Throwable $exception) {
-                return Response::safeJson([
-                    'error' => [
-                        'code' => 'INTERNAL_SERVER_ERROR',
-                        'message' => 'Internal Server Error',
-                    ],
-                ], 500);
-            }
+            return $handler($request);
         }
 
         if ($this->hasPath($path)) {
-            return Response::json([
-                'error' => [
-                    'code' => 'METHOD_NOT_ALLOWED',
-                    'message' => 'Method not allowed',
-                    'allowed_methods' => $this->allowedMethods($path),
-                ],
-            ], 405, ['Allow' => implode(', ', $this->allowedMethods($path))]);
+            throw new MethodNotAllowedHttpException($this->allowedMethods($path));
         }
 
-        return Response::json([
-            'error' => [
-                'code' => 'NOT_FOUND',
-                'message' => 'Route not found',
-            ],
-        ], 404);
+        throw new NotFoundHttpException();
     }
 
     private function hasPath(string $path): bool
