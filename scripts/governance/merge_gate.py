@@ -53,7 +53,7 @@ def main():
         hold_reasons.append('required checks not green')
     if review_decision not in ('', 'APPROVED'):
         hold_reasons.append(f'review decision is {review_decision.lower()}')
-    if mergeable and mergeable != 'mergeable':
+    if mergeable and mergeable not in ('mergeable', 'unstable'):
         hold_reasons.append(f'pr mergeable state is {mergeable}')
 
     gate = 'eligible'
