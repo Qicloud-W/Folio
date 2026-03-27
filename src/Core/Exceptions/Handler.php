@@ -8,17 +8,26 @@ use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
+use Psr\Log\LoggerInterface;
 use Throwable;
 
 final class Handler implements ExceptionHandler
 {
-    public function __construct(private readonly ConfigRepository $config)
-    {
+    public function __construct(
+        private readonly ConfigRepository $config,
+        private readonly ?LoggerInterface $logger = null,
+    ) {
     }
 
     public function report(Throwable $exception): void
     {
-        error_log($exception->__toString());
+        if ($this->logger === null) {
+            return;
+        }
+
+        $this->logger->error($exception->getMessage(), [
+            'exception' => $exception,
+        ]);
     }
 
     public function render(Request $request, Throwable $exception): Response
