@@ -17,6 +17,8 @@ final class ExceptionHandlingTest extends KernelTestCase
         self::assertSame(500, $response->status());
         self::assertSame('INTERNAL_SERVER_ERROR', $response->payload()['error']['code']);
         self::assertSame('Internal Server Error', $response->payload()['error']['message']);
+        self::assertSame(['should_report' => true], $response->payload()['error']['report']);
+        self::assertSame(['status' => 500, 'headers' => []], $response->payload()['error']['render']);
     }
 
     public function test_report_returns_debug_message_when_debug_enabled(): void
@@ -25,6 +27,7 @@ final class ExceptionHandlingTest extends KernelTestCase
 
         self::assertSame(500, $response->status());
         self::assertSame('boom', $response->payload()['error']['message']);
+        self::assertSame(['exception' => RuntimeException::class], $response->payload()['error']['debug']);
     }
 
     public function test_http_exceptions_are_rendered_via_single_handler_entry(): void
@@ -35,5 +38,7 @@ final class ExceptionHandlingTest extends KernelTestCase
 
         self::assertSame(404, $response->status());
         self::assertSame('missing', $response->payload()['error']['message']);
+        self::assertSame(['should_report' => false], $response->payload()['error']['report']);
+        self::assertSame(['status' => 404, 'headers' => []], $response->payload()['error']['render']);
     }
 }

@@ -17,6 +17,17 @@ final class NotFoundEndpointTest extends KernelTestCase
                 'error' => [
                     'code' => 'NOT_FOUND',
                     'message' => 'Route not found',
+                    'context' => [
+                        'method' => 'GET',
+                        'path' => '/missing-route',
+                    ],
+                    'report' => [
+                        'should_report' => false,
+                    ],
+                    'render' => [
+                        'status' => 404,
+                        'headers' => [],
+                    ],
                 ],
             ],
             $response->payload()

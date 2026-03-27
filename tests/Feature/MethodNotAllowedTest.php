@@ -18,7 +18,22 @@ final class MethodNotAllowedTest extends KernelTestCase
                 'error' => [
                     'code' => 'METHOD_NOT_ALLOWED',
                     'message' => 'Method not allowed',
-                    'allowed_methods' => ['GET'],
+                    'meta' => [
+                        'allowed_methods' => ['GET'],
+                    ],
+                    'context' => [
+                        'method' => 'POST',
+                        'path' => '/api/v1/ping',
+                    ],
+                    'report' => [
+                        'should_report' => false,
+                    ],
+                    'render' => [
+                        'status' => 405,
+                        'headers' => [
+                            'Allow' => 'GET',
+                        ],
+                    ],
                 ],
             ],
             $response->payload()
