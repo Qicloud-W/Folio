@@ -44,8 +44,8 @@ final class Application implements ApplicationContract
     {
         if (!$this->bootstrapped) {
             $this->application->bootstrap();
+            $this->register(\Folio\Core\Providers\TranslationServiceProvider::class);
             $this->bootstrapped = true;
-            $this->registeredProviders[\Folio\Core\Providers\TranslationServiceProvider::class] = true;
         }
 
         return $this;
