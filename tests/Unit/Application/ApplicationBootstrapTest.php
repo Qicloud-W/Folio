@@ -26,8 +26,16 @@ final class ApplicationBootstrapTest extends TestCase
     public function test_application_bootstrap_is_idempotent(): void
     {
         $application = new Application(dirname(__DIR__, 3));
+        $container = $application->container();
+
+        $application->bootstrap();
+        $router = $container->make(Router::class);
+        $config = $container->make(ConfigRepository::class);
+        $handler = $container->make(ExceptionHandler::class);
 
         self::assertSame($application, $application->bootstrap());
-        self::assertSame($application, $application->bootstrap());
+        self::assertSame($router, $container->make(Router::class));
+        self::assertSame($config, $container->make(ConfigRepository::class));
+        self::assertSame($handler, $container->make(ExceptionHandler::class));
     }
 }
