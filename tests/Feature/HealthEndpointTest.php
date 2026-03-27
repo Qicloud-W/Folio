@@ -12,13 +12,9 @@ final class HealthEndpointTest extends KernelTestCase
 
         self::assertSame(200, $response->status());
         self::assertSame('application/json; charset=utf-8', $response->headers()['Content-Type']);
-        self::assertSame(
-            [
-                'status' => 'ok',
-                'app' => 'Folio',
-                'env' => 'local',
-            ],
-            $response->payload()
-        );
+        self::assertSame('ok', $response->payload()['status']);
+        self::assertSame('Folio', $response->payload()['app']);
+        self::assertSame('local', $response->payload()['env']);
+        self::assertSame('GET /health', $response->payload()['meta']['alpha']['request_trace']);
     }
 }

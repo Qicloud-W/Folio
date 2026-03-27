@@ -9,10 +9,11 @@ use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Container\Container;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Contracts\Foundation\Application as ApplicationContract;
+use Folio\Core\Contracts\Http\Middleware as MiddlewareContract;
+use Folio\Core\Contracts\ServiceProvider;
 use Folio\Core\Contracts\Support\DeferrableProvider;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
-use Folio\Core\Contracts\ServiceProvider;
 use Throwable;
 
 final class Application implements ApplicationContract
@@ -57,6 +58,32 @@ final class Application implements ApplicationContract
         $this->bootstrapped = true;
 
         return $this;
+    }
+
+    public function withMiddleware(array $middlewares): self
+    {
+        $this->application->withMiddleware($middlewares);
+
+        return $this;
+    }
+
+    public function prependMiddleware(string|MiddlewareContract|callable $middleware): self
+    {
+        $this->application->prependMiddleware($middleware);
+
+        return $this;
+    }
+
+    public function appendMiddleware(string|MiddlewareContract|callable $middleware): self
+    {
+        $this->application->appendMiddleware($middleware);
+
+        return $this;
+    }
+
+    public function middleware(): array
+    {
+        return $this->application->middleware();
     }
 
     public function handle(Request $request): Response
