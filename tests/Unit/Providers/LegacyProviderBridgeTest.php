@@ -7,6 +7,7 @@ namespace Tests\Unit\Providers;
 use Folio\Core\Container\Container;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Foundation\Application;
+use Folio\Core\I18n\Lang;
 use Folio\Core\Providers\RoutingServiceProvider;
 use Folio\Core\Providers\TranslationServiceProvider;
 use Folio\Core\Routing\Router;
@@ -19,8 +20,10 @@ final class LegacyProviderBridgeTest extends TestCase
         $app = Application::configure(dirname(__DIR__, 3))->bootstrap();
 
         self::assertTrue($app->registered(TranslationServiceProvider::class));
+        self::assertFalse($app->bound('translator'));
+        self::assertInstanceOf(Lang::class, $app->make('translator'));
         self::assertTrue($app->bound('translator'));
-        self::assertSame($app->make(\Folio\Core\I18n\Lang::class), $app->make('translator'));
+        self::assertSame($app->make(Lang::class), $app->make('translator'));
     }
 
     public function test_legacy_application_can_register_container_backed_routing_provider(): void

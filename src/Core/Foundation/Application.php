@@ -9,9 +9,10 @@ use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Container\Container;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Contracts\Foundation\Application as ApplicationContract;
+use Folio\Core\Contracts\Support\DeferrableProvider;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
-use Folio\Core\Support\ServiceProvider;
+use Folio\Core\Contracts\ServiceProvider;
 use Throwable;
 
 final class Application implements ApplicationContract
@@ -20,6 +21,9 @@ final class Application implements ApplicationContract
 
     /** @var array<class-string, true> */
     private array $registeredProviders = [];
+
+    /** @var array<class-string, true> */
+    private array $bootedProviders = [];
 
     private function __construct(
         private readonly string $basePath,
@@ -50,9 +54,6 @@ final class Application implements ApplicationContract
         }
 
         $this->application->bootstrap();
-        $this->register(\Folio\Core\Providers\TranslationServiceProvider::class);
-        $this->register(\Folio\Core\Providers\RoutingServiceProvider::class);
-        $this->application->container()->make(\Folio\Core\Routing\Router::class);
         $this->bootstrapped = true;
 
         return $this;
@@ -83,35 +84,31 @@ final class Application implements ApplicationContract
         if (isset($this->registeredProviders[$providerClass])) {
             /** @var ServiceProvider $existing */
             $existing = $this->make($providerClass);
+            $this->bootProviderIfNeeded($existing);
 
             return $existing;
         }
 
         $instance = is_string($provider) ? new $provider($this->container()) : $provider;
-        $instance->register();
         $this->registeredProviders[$providerClass] = true;
         $this->container()->instance($providerClass, $instance);
 
-        if (method_exists($instance, 'provides')) {
-            foreach ((array) $instance->provides() as $abstract) {
-                if (!$this->bound((string) $abstract)) {
-                    continue;
-                }
-
-                $this->instance((string) $abstract, $this->make((string) $abstract));
-            }
+        if (!$instance instanceof DeferrableProvider) {
+            $instance->register();
         }
 
         if (!$this->application->hasProvider($providerClass)) {
             $this->application->registerProvider($providerClass);
         }
 
+        $this->bootProviderIfNeeded($instance);
+
         return $instance;
     }
 
     public function registered(string $provider): bool
     {
-        return isset($this->registeredProviders[$provider]);
+        return isset($this->registeredProviders[$provider]) || $this->application->hasProvider($provider);
     }
 
     public function config(string $key, mixed $default = null): mixed
@@ -139,13 +136,35 @@ final class Application implements ApplicationContract
         return $this->container()->bound($abstract);
     }
 
+    public function has(string $abstract): bool
+    {
+        return $this->container()->has($abstract);
+    }
+
+    public function set(string $abstract, mixed $instance): mixed
+    {
+        return $this->container()->set($abstract, $instance);
+    }
+
     public function make(string $abstract, array $parameters = []): mixed
     {
-        return $this->container()->make($abstract, $parameters);
+        return $this->application->make($abstract, $parameters);
     }
 
     public function container(): Container
     {
         return $this->application->container();
+    }
+
+    private function bootProviderIfNeeded(ServiceProvider $provider): void
+    {
+        $providerClass = $provider::class;
+
+        if (!$this->bootstrapped || isset($this->bootedProviders[$providerClass]) || $provider instanceof DeferrableProvider) {
+            return;
+        }
+
+        $provider->boot();
+        $this->bootedProviders[$providerClass] = true;
     }
 }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Folio\Core\Routing\Router;
-use RuntimeException;
 
 return static function (Router $router, string $locale, string $pingMessage): void {
     $router->get('/api/v1/ping', static function (Request $request) use ($locale, $pingMessage): Response {

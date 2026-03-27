@@ -7,7 +7,7 @@ namespace Folio\Core\Contracts\Foundation;
 use Folio\Core\Contracts\Container\Container;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
-use Folio\Core\Support\ServiceProvider;
+use Folio\Core\Contracts\ServiceProvider;
 
 interface Application extends Container
 {

@@ -15,4 +15,8 @@ interface Container
     public function make(string $abstract, array $parameters = []): mixed;
 
     public function bound(string $abstract): bool;
+
+    public function has(string $abstract): bool;
+
+    public function set(string $abstract, mixed $instance): mixed;
 }
