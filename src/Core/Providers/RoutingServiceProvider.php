@@ -17,7 +17,9 @@ final class RoutingServiceProvider extends ServiceProvider
             $config = $container->make('config');
             $appName = (string) $config->get('app.name', 'Folio');
             $locale = (string) $config->get('app.locale', 'zh-CN');
-            $translator = $container->make('translator');
+            $translator = $container->bound('translator')
+                ? $container->make('translator')
+                : new \Folio\Core\I18n\Lang($container->make('basePath').'/resources/lang');
             $pingMessage = $translator->get($locale, 'messages', 'pong', 'pong');
 
             $router->get('/health', static fn (): Response => Response::json([

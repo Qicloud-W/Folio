@@ -150,7 +150,12 @@ final class Application
         } catch (Throwable $exception) {
             /** @var ExceptionHandler $handler */
             $handler = $this->make(ExceptionHandler::class);
-            $handler->report($exception);
+            ob_start();
+            try {
+                $handler->report($exception);
+            } finally {
+                ob_end_clean();
+            }
 
             return $handler->render($request, $exception);
         }
