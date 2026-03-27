@@ -49,7 +49,6 @@ final class Application
         $this->container->instance('config', $config);
 
         $this->registerProvider(AppServiceProvider::class);
-        $this->registerProvider(\Folio\Core\Providers\RoutingServiceProvider::class);
         $this->bootstrapped = true;
 
         foreach ($this->providers as $provider) {
