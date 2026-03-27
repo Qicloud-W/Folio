@@ -50,6 +50,7 @@ final class Application
         $this->container->set(Router::class, new Router());
 
         $this->registerProvider(AppServiceProvider::class);
+        $this->registerProvider(\Folio\Core\Providers\RoutingServiceProvider::class);
         $this->bootstrapped = true;
 
         foreach ($this->providers as $provider) {
