@@ -12,20 +12,21 @@ final class RoutingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(Router::class, function () {
+        $this->container->singleton(Router::class, function (\Folio\Core\Container\Container $container) {
             $router = new Router();
-            $appName = (string) $this->app->config('app.name', 'Folio');
-            $locale = (string) $this->app->config('app.locale', 'zh-CN');
-            $translator = $this->app->make('translator');
+            $config = $container->make('config');
+            $appName = (string) $config->get('app.name', 'Folio');
+            $locale = (string) $config->get('app.locale', 'zh-CN');
+            $translator = $container->make('translator');
             $pingMessage = $translator->get($locale, 'messages', 'pong', 'pong');
 
             $router->get('/health', static fn (): Response => Response::json([
                 'status' => 'ok',
                 'app' => $appName,
-                'env' => (string) $this->app->config('app.env', 'local'),
+                'env' => (string) $config->get('app.env', 'local'),
             ]));
 
-            $routeFile = $this->app->basePath('routes/api.php');
+            $routeFile = $container->make('basePath').'/routes/api.php';
             if (is_file($routeFile)) {
                 $registerRoutes = require $routeFile;
                 if (is_callable($registerRoutes)) {

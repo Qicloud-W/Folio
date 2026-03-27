@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Folio\Core\Foundation;
 
-use Folio\Core\Application\Application as BaseApplication;
+use Folio\Core\Application\Application as RuntimeApplication;
 use Folio\Core\Config\ConfigRepository;
+use Folio\Core\Container\Container;
 use Folio\Core\Contracts\Foundation\Application as ApplicationContract;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
@@ -20,7 +21,7 @@ final class Application implements ApplicationContract
 
     private function __construct(
         private readonly string $basePath,
-        private readonly BaseApplication $application,
+        private readonly RuntimeApplication $application,
     ) {
     }
 
@@ -28,7 +29,7 @@ final class Application implements ApplicationContract
     {
         $basePath = rtrim($basePath, '/');
 
-        return new self($basePath, new BaseApplication($basePath));
+        return new self($basePath, new RuntimeApplication($basePath));
     }
 
     public function basePath(string $path = ''): string
@@ -42,36 +43,50 @@ final class Application implements ApplicationContract
 
     public function bootstrap(): self
     {
-        if (!$this->bootstrapped) {
-            $this->application->bootstrap();
-            $this->register(\Folio\Core\Providers\TranslationServiceProvider::class);
-            $this->bootstrapped = true;
+        if ($this->bootstrapped) {
+            return $this;
         }
+
+        $this->application->bootstrap();
+        $this->register(\Folio\Core\Providers\TranslationServiceProvider::class);
+        $this->bootstrapped = true;
 
         return $this;
     }
 
     public function handle(Request $request): Response
     {
-        return $this->application->handle($request);
+        return $this->bootstrap()->application->handle($request);
     }
 
     public function register(ServiceProvider|string $provider): ServiceProvider
     {
         $providerClass = is_string($provider) ? $provider : $provider::class;
-        $instance = is_string($provider) ? new $provider($this) : $provider;
 
+        if (isset($this->registeredProviders[$providerClass])) {
+            /** @var ServiceProvider $existing */
+            $existing = $this->make($providerClass);
+
+            return $existing;
+        }
+
+        $instance = is_string($provider) ? new $provider($this->container()) : $provider;
         $instance->register();
         $this->registeredProviders[$providerClass] = true;
+        $this->container()->instance($providerClass, $instance);
 
         if (method_exists($instance, 'provides')) {
             foreach ((array) $instance->provides() as $abstract) {
-                if ($this->bound($abstract)) {
+                if (!$this->bound((string) $abstract)) {
                     continue;
                 }
 
                 $this->instance((string) $abstract, $this->make((string) $abstract));
             }
+        }
+
+        if (!$this->application->hasProvider($providerClass)) {
+            $this->application->registerProvider($providerClass);
         }
 
         return $instance;
@@ -89,26 +104,31 @@ final class Application implements ApplicationContract
 
     public function bind(string $abstract, mixed $concrete = null, bool $shared = false): void
     {
-        $this->application->container()->bind($abstract, $concrete, $shared);
+        $this->container()->bind($abstract, $concrete, $shared);
     }
 
     public function singleton(string $abstract, mixed $concrete = null): void
     {
-        $this->application->container()->singleton($abstract, $concrete);
+        $this->container()->singleton($abstract, $concrete);
     }
 
     public function instance(string $abstract, mixed $instance): mixed
     {
-        return $this->application->container()->instance($abstract, $instance);
+        return $this->container()->instance($abstract, $instance);
     }
 
     public function bound(string $abstract): bool
     {
-        return $this->application->container()->bound($abstract);
+        return $this->container()->bound($abstract);
     }
 
     public function make(string $abstract, array $parameters = []): mixed
     {
-        return $this->application->container()->make($abstract, $parameters);
+        return $this->container()->make($abstract, $parameters);
+    }
+
+    public function container(): Container
+    {
+        return $this->application->container();
     }
 }
