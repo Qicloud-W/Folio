@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Providers;
 
 use Folio\Core\Container\Container;
+use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Foundation\Application;
 use Folio\Core\Providers\RoutingServiceProvider;
 use Folio\Core\Providers\TranslationServiceProvider;
@@ -31,6 +32,14 @@ final class LegacyProviderBridgeTest extends TestCase
         self::assertInstanceOf(RoutingServiceProvider::class, $provider);
         self::assertTrue($app->registered(RoutingServiceProvider::class));
         self::assertInstanceOf(Router::class, $app->make(Router::class));
+    }
+
+    public function test_legacy_provider_bridge_exposes_runtime_singletons_through_legacy_container(): void
+    {
+        $app = Application::configure(dirname(__DIR__, 3))->bootstrap();
+
+        self::assertInstanceOf(ExceptionHandler::class, $app->make(ExceptionHandler::class));
+        self::assertSame($app->make(ExceptionHandler::class), $app->container()->make(ExceptionHandler::class));
     }
 
     public function test_base_application_exposes_container_for_provider_registration(): void

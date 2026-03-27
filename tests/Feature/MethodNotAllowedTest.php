@@ -12,6 +12,7 @@ final class MethodNotAllowedTest extends KernelTestCase
 
         self::assertSame(405, $response->status());
         self::assertSame('application/json; charset=utf-8', $response->headers()['Content-Type']);
+        self::assertSame('GET', $response->headers()['Allow']);
         self::assertSame(
             [
                 'error' => [

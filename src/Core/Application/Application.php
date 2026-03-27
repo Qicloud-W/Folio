@@ -49,6 +49,15 @@ final class Application
         $this->container->instance('config', $config);
 
         $this->registerProvider(AppServiceProvider::class);
+
+        $providers = $config->get('app.providers', []);
+        foreach (is_array($providers) ? $providers : [] as $providerClass) {
+            if (is_string($providerClass)) {
+                $this->registerProvider($providerClass);
+            }
+        }
+
+        $this->registerProvider(\Folio\Core\Providers\RoutingServiceProvider::class);
         $this->bootstrapped = true;
 
         foreach ($this->providers as $provider) {
