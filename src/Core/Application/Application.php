@@ -9,6 +9,7 @@ use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Config\Env;
 use Folio\Core\Container\Container;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
+use Folio\Core\Contracts\Http\Middleware as MiddlewareContract;
 use Folio\Core\Contracts\ServiceProvider;
 use Folio\Core\Contracts\Support\DeferrableProvider;
 use Folio\Core\Http\MiddlewarePipeline;
@@ -33,7 +34,7 @@ final class Application
     /** @var array<class-string<ServiceProvider>, bool> */
     private array $bootedProviders = [];
 
-    /** @var list<class-string|object|callable> */
+    /** @var list<class-string<MiddlewareContract>|MiddlewareContract|callable> */
     private array $middlewares = [];
 
     public function __construct(private readonly string $basePath)
@@ -125,9 +126,30 @@ final class Application
         return $this->container->make($abstract, $parameters);
     }
 
+    /** @param list<class-string<MiddlewareContract>|MiddlewareContract|callable> $middlewares */
     public function withMiddleware(array $middlewares): self
     {
-        $this->middlewares = $middlewares;
+        $this->middlewares = array_values($middlewares);
+
+        return $this;
+    }
+
+    /** @return list<class-string<MiddlewareContract>|MiddlewareContract|callable> */
+    public function middleware(): array
+    {
+        return $this->middlewares;
+    }
+
+    public function appendMiddleware(string|MiddlewareContract|callable $middleware): self
+    {
+        $this->middlewares[] = $middleware;
+
+        return $this;
+    }
+
+    public function prependMiddleware(string|MiddlewareContract|callable $middleware): self
+    {
+        array_unshift($this->middlewares, $middleware);
 
         return $this;
     }
@@ -136,10 +158,13 @@ final class Application
     {
         $router = $this->make(Router::class);
         $config = $this->make(ConfigRepository::class);
-        $middleware = $config->get('app.middleware', []);
+        $configured = $config->get('app.middleware', []);
         $pipeline = new MiddlewarePipeline(
             $this->container,
-            is_array($middleware) ? $middleware : $this->middlewares,
+            [
+                ...(is_array($configured) ? array_values($configured) : []),
+                ...$this->middlewares,
+            ],
         );
 
         try {

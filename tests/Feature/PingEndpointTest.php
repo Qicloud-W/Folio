@@ -12,12 +12,8 @@ final class PingEndpointTest extends KernelTestCase
 
         self::assertSame(200, $response->status());
         self::assertSame('application/json; charset=utf-8', $response->headers()['Content-Type']);
-        self::assertSame(
-            [
-                'message' => 'pong',
-                'locale' => 'zh-CN',
-            ],
-            $response->payload()
-        );
+        self::assertSame('pong', $response->payload()['message']);
+        self::assertSame('zh-CN', $response->payload()['locale']);
+        self::assertSame('GET /api/v1/ping', $response->payload()['meta']['alpha']['request_trace']);
     }
 }

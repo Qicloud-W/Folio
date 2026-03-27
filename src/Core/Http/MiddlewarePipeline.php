@@ -6,10 +6,12 @@ namespace Folio\Core\Http;
 
 use Closure;
 use Folio\Core\Container\Container;
+use Folio\Core\Contracts\Http\Middleware as MiddlewareContract;
+use InvalidArgumentException;
 
 final class MiddlewarePipeline
 {
-    /** @param list<class-string|object|callable> $middlewares */
+    /** @param list<class-string<MiddlewareContract>|MiddlewareContract|callable> $middlewares */
     public function __construct(
         private readonly Container $container,
         private readonly array $middlewares = [],
@@ -29,14 +31,37 @@ final class MiddlewarePipeline
 
     private function handle(mixed $middleware, Request $request, Closure $next): Response
     {
+        $resolved = $this->resolve($middleware);
+
+        if (is_callable($resolved)) {
+            $response = $resolved($request, $next);
+        } elseif ($resolved instanceof MiddlewareContract) {
+            $response = $resolved->handle($request, $next);
+        } else {
+            throw new InvalidArgumentException(sprintf(
+                'Middleware [%s] must be a callable or implement %s.',
+                is_object($resolved) ? $resolved::class : gettype($resolved),
+                MiddlewareContract::class,
+            ));
+        }
+
+        if (!$response instanceof Response) {
+            throw new InvalidArgumentException(sprintf(
+                'Middleware [%s] must return %s.',
+                is_object($resolved) ? $resolved::class : gettype($resolved),
+                Response::class,
+            ));
+        }
+
+        return $response;
+    }
+
+    private function resolve(mixed $middleware): mixed
+    {
         if (is_string($middleware)) {
-            $middleware = $this->container->make($middleware);
+            return $this->container->make($middleware);
         }
 
-        if (is_callable($middleware)) {
-            return $middleware($request, $next);
-        }
-
-        return $middleware->handle($request, $next);
+        return $middleware;
     }
 }
