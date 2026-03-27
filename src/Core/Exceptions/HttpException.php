@@ -8,6 +8,11 @@ use RuntimeException;
 
 class HttpException extends RuntimeException
 {
+    public static function notFound(string $message = 'Route not found'): NotFoundHttpException
+    {
+        return new NotFoundHttpException($message);
+    }
+
     public function __construct(
         private readonly int $status,
         private readonly string $errorCode,

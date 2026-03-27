@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Folio\Core\Exceptions;
 
+use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
-use Folio\Core\Contracts\Foundation\Application;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Throwable;
 
 final class Handler implements ExceptionHandler
 {
-    public function __construct(private readonly Application $app)
+    public function __construct(private readonly ConfigRepository $config)
     {
     }
 
@@ -23,26 +23,27 @@ final class Handler implements ExceptionHandler
 
     public function render(Request $request, Throwable $exception): Response
     {
+        $debug = (bool) $this->config->get('app.debug', false);
+
         if ($exception instanceof MethodNotAllowedHttpException) {
-            return Response::json([
-                'error' => [
+            return Response::safeJson([
+                'error' => array_filter([
                     'code' => $exception->errorCode(),
-                    'message' => $exception->getMessage(),
+                    'message' => $exception->status() >= 500 && !$debug ? 'Internal Server Error' : $exception->getMessage(),
                     'allowed_methods' => $exception->allowedMethods(),
-                ],
+                ], static fn (mixed $value): bool => $value !== null),
             ], $exception->status(), $exception->headers());
         }
 
         if ($exception instanceof HttpException) {
-            return Response::json([
-                'error' => [
+            return Response::safeJson([
+                'error' => array_filter([
                     'code' => $exception->errorCode(),
-                    'message' => $exception->getMessage(),
-                ],
+                    'message' => $exception->status() >= 500 && !$debug ? 'Internal Server Error' : $exception->getMessage(),
+                    ...$exception->meta(),
+                ], static fn (mixed $value): bool => $value !== null),
             ], $exception->status(), $exception->headers());
         }
-
-        $debug = (bool) $this->app->config('app.debug', false);
 
         return Response::safeJson([
             'error' => [
