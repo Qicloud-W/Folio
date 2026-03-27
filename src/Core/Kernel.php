@@ -51,7 +51,7 @@ final class Kernel
             return Response::safeJson([
                 'error' => array_filter([
                     'code' => $exception->errorCode(),
-                    'message' => $exception->getMessage(),
+                    'message' => $exception->status() >= 500 && !$debug ? 'Internal Server Error' : $exception->getMessage(),
                     ...$exception->meta(),
                 ], static fn (mixed $value): bool => $value !== null),
             ], $exception->status(), $exception->status() === 405 && isset($exception->meta()['allowed_methods'])

@@ -31,4 +31,9 @@ class HttpException extends RuntimeException
     {
         return $this->headers;
     }
+
+    public function meta(): array
+    {
+        return [];
+    }
 }

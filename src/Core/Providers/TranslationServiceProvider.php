@@ -13,7 +13,7 @@ final class TranslationServiceProvider extends ServiceProvider implements Deferr
     public function register(): void
     {
         $this->app->singleton(Lang::class, fn () => new Lang($this->app->basePath('resources/lang')));
-        $this->app->singleton('translator', fn () => $this->app->make(Lang::class));
+        $this->app->singleton('translator', fn () => new Lang($this->app->basePath('resources/lang')));
     }
 
     public function provides(): array

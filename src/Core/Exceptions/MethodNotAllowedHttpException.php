@@ -17,4 +17,9 @@ final class MethodNotAllowedHttpException extends HttpException
     {
         return $this->allowedMethods;
     }
+
+    public function meta(): array
+    {
+        return ['allowed_methods' => $this->allowedMethods];
+    }
 }
