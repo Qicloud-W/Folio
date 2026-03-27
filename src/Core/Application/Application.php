@@ -22,7 +22,7 @@ final class Application
 {
     private readonly Container $container;
 
-    /** @var list<ServiceProvider> */
+    /** @var array<class-string<ServiceProvider>, ServiceProvider> */
     private array $providers = [];
 
     /** @var list<class-string|object|callable> */
@@ -54,12 +54,21 @@ final class Application
 
     public function registerProvider(string $providerClass): self
     {
+        if ($this->hasProvider($providerClass)) {
+            return $this;
+        }
+
         /** @var ServiceProvider $provider */
         $provider = new $providerClass($this->container);
         $provider->register();
-        $this->providers[] = $provider;
+        $this->providers[$providerClass] = $provider;
 
         return $this;
+    }
+
+    public function hasProvider(string $providerClass): bool
+    {
+        return isset($this->providers[$providerClass]);
     }
 
     public function withMiddleware(array $middlewares): self

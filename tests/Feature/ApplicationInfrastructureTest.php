@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use Folio\Core\Container\Container;
 use Folio\Core\Foundation\Application;
 use Folio\Core\I18n\Lang;
 use Folio\Core\Pipeline\Pipeline;
@@ -17,6 +18,7 @@ final class ApplicationInfrastructureTest extends KernelTestCase
 
         self::assertTrue($app->bound('config'));
         self::assertTrue($app->registered(TranslationServiceProvider::class));
+        self::assertInstanceOf(Container::class, $app->container());
         self::assertSame('Folio', $app->config('app.name'));
         self::assertInstanceOf(Lang::class, $app->make('translator'));
         self::assertSame($app->make(Lang::class), $app->make('translator'));

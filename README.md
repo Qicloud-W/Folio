@@ -2,7 +2,7 @@
 
 Folio 是一个**面向国人**、**API 优先**、**轻量可扩展**的 PHP 应用框架骨架。
 
-当前仓库已经打通最小可运行主链路：`public/index.php -> Request -> Kernel -> Router -> Response`，并接入了配置加载、`.env` 读取、基础 i18n 文案读取，以及通过 `routes/api.php` 注册 API 路由的能力。
+当前仓库已经打通最小可运行主链路，并通过 `public/index.php` + `Folio\Core\Foundation\Application` 暴露 alpha 阶段的统一应用入口；同时接入了配置加载、`.env` 读取、基础 i18n 文案读取，以及通过 `routes/api.php` 注册 API 路由的能力。
 
 ## 当前 MVP 能力
 
@@ -171,6 +171,11 @@ CI 当前会执行：
 - `0.1.0-alpha`：最小可跑通骨架 + 治理结构
 - `0.2.0-alpha`：中间件链、异常处理增强、bootstrap 收敛
 - `0.3.0-alpha`：容器增强、Provider 生命周期、i18n 初版
+
+## License
+
+MIT
+ha`：容器增强、Provider 生命周期、i18n 初版
 
 ## License
 
