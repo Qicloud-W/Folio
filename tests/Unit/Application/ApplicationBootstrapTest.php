@@ -6,6 +6,7 @@ namespace Tests\Unit\Application;
 
 use Folio\Core\Application\Application;
 use Folio\Core\Config\ConfigRepository;
+use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
@@ -18,6 +19,15 @@ final class ApplicationBootstrapTest extends TestCase
 
         self::assertInstanceOf(ConfigRepository::class, $container->make(ConfigRepository::class));
         self::assertInstanceOf(Router::class, $container->make(Router::class));
+        self::assertInstanceOf(ExceptionHandler::class, $container->make(ExceptionHandler::class));
         self::assertTrue($container->has('config'));
+    }
+
+    public function test_application_bootstrap_is_idempotent(): void
+    {
+        $application = new Application(dirname(__DIR__, 3));
+
+        self::assertSame($application, $application->bootstrap());
+        self::assertSame($application, $application->bootstrap());
     }
 }

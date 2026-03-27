@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Folio\Core;
 
-use Folio\Core\Application\Application;
 use Folio\Core\Config\ConfigRepository;
-use Folio\Core\Exceptions\HttpException;
+use Folio\Core\Foundation\Application;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Throwable;
@@ -17,7 +16,7 @@ final class Kernel
 
     public function __construct(string $basePath)
     {
-        $this->app = (new Application($basePath))->bootstrap();
+        $this->app = Application::configure($basePath)->bootstrap();
     }
 
     public function handle(Request $request): Response
@@ -31,39 +30,15 @@ final class Kernel
             $config = new ConfigRepository([
                 'app' => ['debug' => true],
             ]);
-            $this->app->container()->instance(ConfigRepository::class, $config);
-            $this->app->container()->instance('config', $config);
+            $this->app->instance(ConfigRepository::class, $config);
+            $this->app->instance('config', $config);
         }
 
-        return $this->renderThrowable($exception);
+        return $this->app->report($exception);
     }
 
     public function config(string $key, mixed $default = null): mixed
     {
-        return $this->app->container()->make(ConfigRepository::class)->get($key, $default);
-    }
-
-    private function renderThrowable(Throwable $exception): Response
-    {
-        $debug = (bool) $this->app->container()->make(ConfigRepository::class)->get('app.debug', false);
-
-        if ($exception instanceof HttpException) {
-            return Response::safeJson([
-                'error' => array_filter([
-                    'code' => $exception->errorCode(),
-                    'message' => $exception->status() >= 500 && !$debug ? 'Internal Server Error' : $exception->getMessage(),
-                    ...$exception->meta(),
-                ], static fn (mixed $value): bool => $value !== null),
-            ], $exception->status(), $exception->status() === 405 && isset($exception->meta()['allowed_methods'])
-                ? ['Allow' => implode(', ', $exception->meta()['allowed_methods'])]
-                : []);
-        }
-
-        return Response::safeJson([
-            'error' => [
-                'code' => 'INTERNAL_SERVER_ERROR',
-                'message' => $debug ? $exception->getMessage() : 'Internal Server Error',
-            ],
-        ], 500);
+        return $this->app->config($key, $default);
     }
 }

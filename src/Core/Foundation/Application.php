@@ -7,10 +7,12 @@ namespace Folio\Core\Foundation;
 use Folio\Core\Application\Application as RuntimeApplication;
 use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Container\Container;
+use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Contracts\Foundation\Application as ApplicationContract;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Folio\Core\Support\ServiceProvider;
+use Throwable;
 
 final class Application implements ApplicationContract
 {
@@ -49,6 +51,7 @@ final class Application implements ApplicationContract
 
         $this->application->bootstrap();
         $this->register(\Folio\Core\Providers\TranslationServiceProvider::class);
+        $this->register(\Folio\Core\Providers\RoutingServiceProvider::class);
         $this->bootstrapped = true;
 
         return $this;
@@ -56,7 +59,20 @@ final class Application implements ApplicationContract
 
     public function handle(Request $request): Response
     {
-        return $this->bootstrap()->application->handle($request);
+        try {
+            return $this->bootstrap()->application->handle($request);
+        } catch (Throwable $exception) {
+            return $this->report($exception);
+        }
+    }
+
+    public function report(Throwable $exception): Response
+    {
+        /** @var ExceptionHandler $handler */
+        $handler = $this->make(ExceptionHandler::class);
+        $handler->report($exception);
+
+        return $handler->render(Request::capture(), $exception);
     }
 
     public function register(ServiceProvider|string $provider): ServiceProvider
