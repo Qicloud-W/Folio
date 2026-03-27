@@ -8,6 +8,7 @@ use Folio\Core\Container\Container;
 use Folio\Core\Foundation\Application;
 use Folio\Core\I18n\Lang;
 use Folio\Core\Pipeline\Pipeline;
+use Folio\Core\Providers\RoutingServiceProvider;
 use Folio\Core\Providers\TranslationServiceProvider;
 
 final class ApplicationInfrastructureTest extends KernelTestCase
