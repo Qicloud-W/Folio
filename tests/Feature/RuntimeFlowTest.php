@@ -29,7 +29,7 @@ final class RuntimeFlowTest extends KernelTestCase
 
         self::assertSame(405, $response->status());
         self::assertSame('GET', $response->headers()['Allow']);
-        self::assertSame(['GET'], $response->payload()['error']['allowed_methods']);
+        self::assertSame(['GET'], $response->payload()['error']['meta']['allowed_methods']);
     }
 
     public function test_runtime_application_sanitizes_unhandled_500_when_debug_disabled(): void
