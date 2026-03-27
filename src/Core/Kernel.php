@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Folio\Core;
 
+use Folio\Core\Application\Application;
 use Folio\Core\Config\ConfigRepository;
-use Folio\Core\Contracts\Debug\ExceptionHandler;
-use Folio\Core\Foundation\Application;
+use Folio\Core\Exceptions\HttpException;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Throwable;
@@ -17,7 +17,7 @@ final class Kernel
 
     public function __construct(string $basePath)
     {
-        $this->app = Application::configure($basePath);
+        $this->app = (new Application($basePath))->bootstrap();
     }
 
     public function handle(Request $request): Response
@@ -28,22 +28,42 @@ final class Kernel
     public function report(Throwable $exception, bool $debug = false): Response
     {
         if ($debug) {
-            $this->app->instance('config', new ConfigRepository([
+            $config = new ConfigRepository([
                 'app' => ['debug' => true],
-            ]));
+            ]);
+            $this->app->container()->instance(ConfigRepository::class, $config);
+            $this->app->container()->instance('config', $config);
         }
 
-        /** @var ExceptionHandler $handler */
-        $handler = $this->app->make(ExceptionHandler::class);
-        $handler->report($exception);
-
-        return $handler->render(new Request('GET', '/'), $exception);
+        return $this->renderThrowable($exception);
     }
 
     public function config(string $key, mixed $default = null): mixed
     {
-        $this->app->bootstrap();
+        return $this->app->container()->make(ConfigRepository::class)->get($key, $default);
+    }
 
-        return $this->app->config($key, $default);
+    private function renderThrowable(Throwable $exception): Response
+    {
+        $debug = (bool) $this->app->container()->make(ConfigRepository::class)->get('app.debug', false);
+
+        if ($exception instanceof HttpException) {
+            return Response::safeJson([
+                'error' => array_filter([
+                    'code' => $exception->errorCode(),
+                    'message' => $exception->getMessage(),
+                    ...$exception->meta(),
+                ], static fn (mixed $value): bool => $value !== null),
+            ], $exception->status(), $exception->status() === 405 && isset($exception->meta()['allowed_methods'])
+                ? ['Allow' => implode(', ', $exception->meta()['allowed_methods'])]
+                : []);
+        }
+
+        return Response::safeJson([
+            'error' => [
+                'code' => 'INTERNAL_SERVER_ERROR',
+                'message' => $debug ? $exception->getMessage() : 'Internal Server Error',
+            ],
+        ], 500);
     }
 }

@@ -43,6 +43,16 @@ class Container
         return array_key_exists($abstract, $this->bindings) || array_key_exists($abstract, $this->instances);
     }
 
+    public function has(string $abstract): bool
+    {
+        return $this->bound($abstract);
+    }
+
+    public function set(string $abstract, mixed $concrete): mixed
+    {
+        return $this->instance($abstract, $concrete);
+    }
+
     public function make(string $abstract, array $parameters = []): mixed
     {
         if (array_key_exists($abstract, $this->instances) && $parameters === []) {
