@@ -17,14 +17,17 @@ final class ExceptionHandlingTest extends KernelTestCase
         self::assertSame(500, $response->status());
         self::assertSame('INTERNAL_SERVER_ERROR', $response->payload()['error']['code']);
         self::assertSame('Internal Server Error', $response->payload()['error']['message']);
+        self::assertArrayNotHasKey('debug', $response->payload()['error']);
     }
 
-    public function test_report_returns_debug_message_when_debug_enabled(): void
+    public function test_report_returns_debug_message_and_context_when_debug_enabled(): void
     {
         $response = (new \Folio\Core\Kernel(dirname(__DIR__, 2)))->report(new RuntimeException('boom'), true);
 
         self::assertSame(500, $response->status());
         self::assertSame('boom', $response->payload()['error']['message']);
+        self::assertSame(RuntimeException::class, $response->payload()['error']['debug']['exception']);
+        self::assertSame('CLI', $response->payload()['error']['debug']['method']);
     }
 
     public function test_http_exceptions_are_rendered_via_single_handler_entry(): void
