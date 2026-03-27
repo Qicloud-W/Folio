@@ -1,10 +1,10 @@
 # Folio alpha 内核边界冻结（2026-03-27）
 
-> 这份文档只冻结 0.2.x-alpha 当前已经可以对外承诺的边界，不替内部 runtime 收口抢结论。
+> 这份文档只冻结 `0.2.x-alpha` 当前已经可以对外承诺的边界，不替内部 runtime 收口抢结论。
 
 ## 先说结论
 
-Folio 0.2.x-alpha 当前可以对外冻结的，是下面这些边界：
+Folio `0.2.x-alpha` 当前可以对外冻结的，是下面这些边界：
 
 1. **唯一 public HTTP 入口**：`public/index.php`
 2. **唯一对外 Application facade**：`Folio\Core\Foundation\Application`
@@ -20,9 +20,7 @@ Folio 0.2.x-alpha 当前可以对外冻结的，是下面这些边界：
 - `src/Core/Kernel.php`
 - `src/Core/Foundation/HttpKernel.php`
 
-这些内部实现之间的最终主从关系，**当前还没有对外冻结**。因此 0.2.x-alpha 文档不能把其中任何一条内部实现路径写成最终稳定 ABI。
-
----
+这些内部实现之间的最终主从关系，**当前还没有对外冻结**。因此 `0.2.x-alpha` 文档不能把其中任何一条内部实现路径写成最终稳定 ABI。
 
 ## 1. Public HTTP 入口
 
@@ -33,8 +31,6 @@ Folio 0.2.x-alpha 当前可以对外冻结的，是下面这些边界：
 ### 未冻结
 - 入口内部最终到底直接调 `Application::handle()`，还是显式调某个 `HttpKernel` 实现。
 - bootstrap 细节是否继续藏在 facade 背后。
-
----
 
 ## 2. Application facade
 
@@ -52,8 +48,6 @@ Folio 0.2.x-alpha 当前可以对外冻结的，是下面这些边界：
 - `container()` 是否进入正式 alpha 对外 contract。
 - 任何内部 bridge 实现细节。
 
----
-
 ## 3. Container alpha contract
 
 ### 已冻结
@@ -69,14 +63,12 @@ alpha 对外只冻结下面 5 个容器动作：
 - `set()`
 - `has()`
 - 随意扩散的 string alias
-- 完整自动装配/反射注入语义
+- 完整自动装配 / 反射注入语义
 
 ### 约束
 - class-string key 优先于任意 string key。
 - string key 当前只用于内核保留别名，如 `config`、`translator`、`basePath`。
 - 不把实现里存在的脏接口继续外扩成 README 口径。
-
----
 
 ## 4. Service Provider alpha contract
 
@@ -90,8 +82,6 @@ alpha 对外只冻结下面 5 个容器动作：
 - 自动发现 provider
 - 完整 deferred provider 机制
 - 更多高级生命周期钩子
-
----
 
 ## 5. Routing alpha boundary
 
@@ -108,8 +98,6 @@ alpha 对外只冻结下面 5 个容器动作：
 - 自动控制器映射
 - 当前 router 全部内部 API 的对外稳定性
 
----
-
 ## 6. Exception alpha boundary
 
 ### 已冻结
@@ -120,8 +108,6 @@ alpha 对外只冻结下面 5 个容器动作：
 ### 未冻结
 - 最终由谁负责渲染异常的内部分工。
 - 完整异常类型体系是否定稿。
-
----
 
 ## 7. Middleware alpha boundary
 
@@ -134,17 +120,13 @@ alpha 对外只冻结下面 5 个容器动作：
 - route middleware / group middleware / priority 等高级机制。
 - pipeline 内部实现是否继续调整。
 
----
-
 ## 8. 对 README / roadmap / audit 的同步要求
 
-为了不继续文档打架，0.2.x-alpha 对外文档必须统一成下面口径：
+为了不让文档继续互相打架，`0.2.x-alpha` 对外文档必须统一成下面口径：
 
-- README 说“当前 main 已有 middleware / container 最小面 / provider / JSON exception 出口”
-- roadmap 只写 0.2.x-alpha 当前事实与承诺，不混 P1/P2 愿景
-- audit 只写当前 main 的真实风险，不复读已经过期的旧问题
-
----
+- README 说“当前 `main` 已有 middleware / container 最小面 / provider / JSON exception 出口”
+- roadmap 只写 `0.2.x-alpha` 当前事实与承诺，不混 P1 / P2 愿景
+- audit 只写当前 `main` 的真实风险，不复读已经过期的旧问题
 
 ## 9. 一句话口径
 
