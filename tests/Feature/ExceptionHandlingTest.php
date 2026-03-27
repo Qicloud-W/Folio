@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Folio\Core\Exceptions\HttpException;
+use Folio\Core\Exceptions\NotFoundHttpException;
 use Folio\Core\Foundation\Application;
 use RuntimeException;
 
@@ -31,7 +31,7 @@ final class ExceptionHandlingTest extends KernelTestCase
     {
         $response = Application::configure(dirname(__DIR__, 2))
             ->bootstrap()
-            ->report(HttpException::notFound('missing'));
+            ->report(new NotFoundHttpException('missing'));
 
         self::assertSame(404, $response->status());
         self::assertSame('missing', $response->payload()['error']['message']);

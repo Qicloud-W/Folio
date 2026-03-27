@@ -52,6 +52,7 @@ final class Application implements ApplicationContract
         $this->application->bootstrap();
         $this->register(\Folio\Core\Providers\TranslationServiceProvider::class);
         $this->register(\Folio\Core\Providers\RoutingServiceProvider::class);
+        $this->application->container()->make(\Folio\Core\Routing\Router::class);
         $this->bootstrapped = true;
 
         return $this;

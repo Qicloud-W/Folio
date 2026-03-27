@@ -45,12 +45,10 @@ final class Application
         Env::load($this->basePath.'/.env');
 
         $config = (new ConfigLoader())->load($this->basePath.'/config');
-        $this->container->set(ConfigRepository::class, $config);
-        $this->container->set('config', $config);
-        $this->container->set(Router::class, new Router());
+        $this->container->instance(ConfigRepository::class, $config);
+        $this->container->instance('config', $config);
 
         $this->registerProvider(AppServiceProvider::class);
-        $this->registerProvider(\Folio\Core\Providers\RoutingServiceProvider::class);
         $this->bootstrapped = true;
 
         foreach ($this->providers as $provider) {
