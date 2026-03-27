@@ -181,6 +181,7 @@ alpha 对外只冻结下面 5 个容器动作：
 已经开始覆盖：
 - facade bootstrap 后 provider 是否真实落到底层 container
 - translator / router 等 binding 是否通过 bridge 可解析
+- container-backed routing provider 是否可经由 legacy facade 注册并解析
 
 **收益**：
 - 先把桥接行为钉住，避免后续 runtime 收口时把 provider bridge 弄坏
