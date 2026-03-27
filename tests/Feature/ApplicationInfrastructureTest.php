@@ -22,6 +22,7 @@ final class ApplicationInfrastructureTest extends KernelTestCase
         self::assertInstanceOf(Container::class, $app->container());
         self::assertInstanceOf(RoutingServiceProvider::class, $app->register(RoutingServiceProvider::class));
         self::assertSame('Folio', $app->config('app.name'));
+        self::assertFalse($app->bound('translator'));
         self::assertInstanceOf(Lang::class, $app->make('translator'));
         self::assertSame($app->make(Lang::class), $app->make('translator'));
         self::assertSame($app->make(Lang::class), $app->make(Lang::class));

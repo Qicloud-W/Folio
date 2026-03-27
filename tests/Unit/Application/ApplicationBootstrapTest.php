@@ -7,6 +7,7 @@ namespace Tests\Unit\Application;
 use Folio\Core\Application\Application;
 use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
+use Folio\Core\I18n\Lang;
 use Folio\Core\Routing\Router;
 use PHPUnit\Framework\TestCase;
 
@@ -29,13 +30,27 @@ final class ApplicationBootstrapTest extends TestCase
         $container = $application->container();
 
         $application->bootstrap();
-        $router = $container->make(Router::class);
+        $router = $application->make(Router::class);
         $config = $container->make(ConfigRepository::class);
         $handler = $container->make(ExceptionHandler::class);
 
         self::assertSame($application, $application->bootstrap());
-        self::assertSame($router, $container->make(Router::class));
+        self::assertSame($router, $application->make(Router::class));
         self::assertSame($config, $container->make(ConfigRepository::class));
         self::assertSame($handler, $container->make(ExceptionHandler::class));
+    }
+
+    public function test_deferred_provider_registers_only_when_service_is_resolved(): void
+    {
+        $application = (new Application(dirname(__DIR__, 3)))->bootstrap();
+
+        self::assertTrue($application->hasProvider(\Folio\Core\Providers\TranslationServiceProvider::class));
+        self::assertTrue($application->isDeferredService(Lang::class));
+
+        $translator = $application->make(Lang::class);
+
+        self::assertInstanceOf(Lang::class, $translator);
+        self::assertFalse($application->isDeferredService(Lang::class));
+        self::assertSame($translator, $application->make('translator'));
     }
 }

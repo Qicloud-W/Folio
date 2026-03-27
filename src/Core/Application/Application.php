@@ -10,6 +10,7 @@ use Folio\Core\Config\Env;
 use Folio\Core\Container\Container;
 use Folio\Core\Contracts\Debug\ExceptionHandler;
 use Folio\Core\Contracts\ServiceProvider;
+use Folio\Core\Contracts\Support\DeferrableProvider;
 use Folio\Core\Http\MiddlewarePipeline;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
@@ -25,6 +26,12 @@ final class Application
 
     /** @var array<class-string<ServiceProvider>, ServiceProvider> */
     private array $providers = [];
+
+    /** @var array<string, class-string<ServiceProvider>> */
+    private array $deferredProviders = [];
+
+    /** @var array<class-string<ServiceProvider>, bool> */
+    private array $bootedProviders = [];
 
     /** @var list<class-string|object|callable> */
     private array $middlewares = [];
@@ -59,10 +66,7 @@ final class Application
 
         $this->registerProvider(\Folio\Core\Providers\RoutingServiceProvider::class);
         $this->bootstrapped = true;
-
-        foreach ($this->providers as $provider) {
-            $provider->boot();
-        }
+        $this->bootRegisteredProviders();
 
         return $this;
     }
@@ -70,17 +74,26 @@ final class Application
     public function registerProvider(string $providerClass): self
     {
         if ($this->hasProvider($providerClass)) {
+            $this->bootProviderIfNeeded($providerClass);
+
             return $this;
         }
 
         /** @var ServiceProvider $provider */
         $provider = new $providerClass($this->container);
+
+        if ($provider instanceof DeferrableProvider) {
+            foreach ($provider->provides() as $abstract) {
+                $this->deferredProviders[$abstract] = $providerClass;
+            }
+            $this->providers[$providerClass] = $provider;
+
+            return $this;
+        }
+
         $provider->register();
         $this->providers[$providerClass] = $provider;
-
-        if ($this->bootstrapped) {
-            $provider->boot();
-        }
+        $this->bootProviderIfNeeded($providerClass);
 
         return $this;
     }
@@ -88,6 +101,28 @@ final class Application
     public function hasProvider(string $providerClass): bool
     {
         return isset($this->providers[$providerClass]);
+    }
+
+    public function provider(string $providerClass): ?ServiceProvider
+    {
+        return $this->providers[$providerClass] ?? null;
+    }
+
+    public function isProviderBooted(string $providerClass): bool
+    {
+        return isset($this->bootedProviders[$providerClass]);
+    }
+
+    public function isDeferredService(string $abstract): bool
+    {
+        return isset($this->deferredProviders[$abstract]);
+    }
+
+    public function make(string $abstract, array $parameters = []): mixed
+    {
+        $this->loadDeferredProvider($abstract);
+
+        return $this->container->make($abstract, $parameters);
     }
 
     public function withMiddleware(array $middlewares): self
@@ -99,8 +134,8 @@ final class Application
 
     public function handle(Request $request): Response
     {
-        $router = $this->container->make(Router::class);
-        $config = $this->container->make(ConfigRepository::class);
+        $router = $this->make(Router::class);
+        $config = $this->make(ConfigRepository::class);
         $middleware = $config->get('app.middleware', []);
         $pipeline = new MiddlewarePipeline(
             $this->container,
@@ -114,7 +149,7 @@ final class Application
             );
         } catch (Throwable $exception) {
             /** @var ExceptionHandler $handler */
-            $handler = $this->container->make(ExceptionHandler::class);
+            $handler = $this->make(ExceptionHandler::class);
             $handler->report($exception);
 
             return $handler->render($request, $exception);
@@ -124,5 +159,45 @@ final class Application
     public function container(): Container
     {
         return $this->container;
+    }
+
+    private function bootRegisteredProviders(): void
+    {
+        foreach (array_keys($this->providers) as $providerClass) {
+            $this->bootProviderIfNeeded($providerClass);
+        }
+    }
+
+    private function bootProviderIfNeeded(string $providerClass): void
+    {
+        if (!$this->bootstrapped || isset($this->bootedProviders[$providerClass])) {
+            return;
+        }
+
+        $provider = $this->providers[$providerClass] ?? null;
+        if ($provider === null || $provider instanceof DeferrableProvider) {
+            return;
+        }
+
+        $provider->boot();
+        $this->bootedProviders[$providerClass] = true;
+    }
+
+    private function loadDeferredProvider(string $abstract): void
+    {
+        $providerClass = $this->deferredProviders[$abstract] ?? null;
+        if ($providerClass === null) {
+            return;
+        }
+
+        /** @var ServiceProvider&DeferrableProvider $provider */
+        $provider = $this->providers[$providerClass];
+        $provider->register();
+
+        foreach ($provider->provides() as $provided) {
+            unset($this->deferredProviders[$provided]);
+        }
+
+        $this->bootProviderIfNeeded($providerClass);
     }
 }
