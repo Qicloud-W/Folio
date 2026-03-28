@@ -17,4 +17,14 @@ return static function (Router $router, string $locale, string $pingMessage): vo
             'locale' => $locale,
         ]);
     });
+
+    $router->get('/api/v1/users/{user}', static function (Request $request) use ($locale): Response {
+        return Response::json([
+            'data' => [
+                'user' => $request->routeParameter('user'),
+                'route_parameters' => $request->routeParameters(),
+            ],
+            'locale' => $locale,
+        ]);
+    });
 };

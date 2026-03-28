@@ -12,7 +12,7 @@ use Folio\Core\Http\Response;
 
 final class Router
 {
-    /** @var array<string, array<string, Closure(Request): Response>> */
+    /** @var array<string, array<int, array{path: string, handler: Closure(Request): Response, pattern: string, parameters: list<string>}>> */
     private array $routes = [];
 
     public function get(string $path, Closure $handler): void
@@ -22,17 +22,23 @@ final class Router
 
     public function map(string $method, string $path, Closure $handler): void
     {
-        $this->routes[strtoupper($method)][$path] = $handler;
+        $normalizedPath = $this->normalizePath($path);
+        $this->routes[strtoupper($method)][] = [
+            'path' => $normalizedPath,
+            'handler' => $handler,
+            'pattern' => $this->compilePathPattern($normalizedPath),
+            'parameters' => $this->extractParameterNames($normalizedPath),
+        ];
     }
 
     public function dispatch(Request $request): Response
     {
         $method = strtoupper($request->method());
-        $path = $request->path();
-        $handler = $this->routes[$method][$path] ?? null;
+        $path = $this->normalizePath($request->path());
+        $matchedRoute = $this->matchRoute($method, $path);
 
-        if ($handler instanceof Closure) {
-            return $handler($request);
+        if ($matchedRoute !== null) {
+            return $matchedRoute['handler']($request->withRouteParameters($matchedRoute['parameters']));
         }
 
         if ($this->hasPath($path)) {
@@ -44,8 +50,8 @@ final class Router
 
     private function hasPath(string $path): bool
     {
-        foreach ($this->routes as $routes) {
-            if (array_key_exists($path, $routes)) {
+        foreach (array_keys($this->routes) as $method) {
+            if ($this->matchRoute($method, $path) !== null) {
                 return true;
             }
         }
@@ -58,8 +64,8 @@ final class Router
     {
         $allowed = [];
 
-        foreach ($this->routes as $method => $routes) {
-            if (array_key_exists($path, $routes)) {
+        foreach (array_keys($this->routes) as $method) {
+            if ($this->matchRoute($method, $path) !== null) {
                 $allowed[] = $method;
             }
         }
@@ -67,5 +73,64 @@ final class Router
         sort($allowed);
 
         return $allowed;
+    }
+
+    /** @return array{handler: Closure(Request): Response, parameters: array<string, string>}|null */
+    private function matchRoute(string $method, string $path): ?array
+    {
+        foreach ($this->routes[$method] ?? [] as $route) {
+            if (preg_match($route['pattern'], $path, $matches) !== 1) {
+                continue;
+            }
+
+            $parameters = [];
+            foreach ($route['parameters'] as $parameter) {
+                if (isset($matches[$parameter])) {
+                    $parameters[$parameter] = $matches[$parameter];
+                }
+            }
+
+            return [
+                'handler' => $route['handler'],
+                'parameters' => $parameters,
+            ];
+        }
+
+        return null;
+    }
+
+    private function normalizePath(string $path): string
+    {
+        if ($path === '' || $path === '/') {
+            return '/';
+        }
+
+        return '/'.trim($path, '/');
+    }
+
+    private function compilePathPattern(string $path): string
+    {
+        $segments = explode('/', trim($path, '/'));
+        $compiled = array_map(static function (string $segment): string {
+            if (preg_match('/^\{([A-Za-z_][A-Za-z0-9_]*)\}$/', $segment, $matches) === 1) {
+                return '(?P<'.$matches[1].'>[^/]+)';
+            }
+
+            return preg_quote($segment, '#');
+        }, $segments);
+
+        if ($compiled === []) {
+            return '#^/$#';
+        }
+
+        return '#^/'.implode('/', $compiled).'$#';
+    }
+
+    /** @return list<string> */
+    private function extractParameterNames(string $path): array
+    {
+        preg_match_all('/\{([A-Za-z_][A-Za-z0-9_]*)\}/', $path, $matches);
+
+        return $matches[1] ?? [];
     }
 }

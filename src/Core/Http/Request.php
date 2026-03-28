@@ -6,12 +6,14 @@ namespace Folio\Core\Http;
 
 final class Request
 {
+    /** @param array<string, string> $routeParameters */
     public function __construct(
         private readonly string $method,
         private readonly string $path,
         private readonly array $query = [],
         private readonly array $server = [],
         private readonly mixed $body = null,
+        private readonly array $routeParameters = [],
     ) {
     }
 
@@ -55,5 +57,29 @@ final class Request
     public function body(): mixed
     {
         return $this->body;
+    }
+
+    /** @return array<string, string> */
+    public function routeParameters(): array
+    {
+        return $this->routeParameters;
+    }
+
+    public function routeParameter(string $key, mixed $default = null): mixed
+    {
+        return $this->routeParameters[$key] ?? $default;
+    }
+
+    /** @param array<string, string> $parameters */
+    public function withRouteParameters(array $parameters): self
+    {
+        return new self(
+            method: $this->method,
+            path: $this->path,
+            query: $this->query,
+            server: $this->server,
+            body: $this->body,
+            routeParameters: $parameters,
+        );
     }
 }
