@@ -9,6 +9,7 @@ use Folio\Core\Exceptions\MethodNotAllowedHttpException;
 use Folio\Core\Exceptions\NotFoundHttpException;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
+use InvalidArgumentException;
 
 final class Router
 {
@@ -80,6 +81,24 @@ final class Router
         $matchedRoute = $this->matchRoute(strtoupper($method), $this->normalizePath($path));
 
         return $matchedRoute['name'] ?? null;
+    }
+
+    /**
+     * @param array<string, scalar|null> $parameters
+     */
+    public function urlFor(string $name, array $parameters = []): string
+    {
+        foreach ($this->routes as $methodRoutes) {
+            foreach ($methodRoutes as $route) {
+                if (($route['name'] ?? null) !== $name) {
+                    continue;
+                }
+
+                return $this->buildPath($route['path'], $route['parameters'], $parameters);
+            }
+        }
+
+        throw new InvalidArgumentException(sprintf('Route [%s] is not defined.', $name));
     }
 
     public function dispatch(Request $request): Response
@@ -217,6 +236,44 @@ final class Router
         preg_match_all('/\{([A-Za-z_][A-Za-z0-9_]*)\}/', $path, $matches);
 
         return $matches[1] ?? [];
+    }
+
+    /**
+     * @param list<string> $expectedParameters
+     * @param array<string, scalar|null> $parameters
+     */
+    private function buildPath(string $path, array $expectedParameters, array $parameters): string
+    {
+        $resolvedPath = $path;
+
+        foreach ($expectedParameters as $parameter) {
+            if (!array_key_exists($parameter, $parameters)) {
+                throw new InvalidArgumentException(sprintf('Route [%s] is missing required parameter [%s].', $path, $parameter));
+            }
+
+            $value = $parameters[$parameter];
+
+            if ($value === null || $value === '') {
+                throw new InvalidArgumentException(sprintf('Route [%s] parameter [%s] must be a non-empty scalar.', $path, $parameter));
+            }
+
+            $resolvedPath = str_replace('{'.$parameter.'}', rawurlencode((string) $value), $resolvedPath);
+            unset($parameters[$parameter]);
+        }
+
+        if ($parameters === []) {
+            return $resolvedPath;
+        }
+
+        ksort($parameters);
+
+        $query = http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
+
+        if ($query === '') {
+            return $resolvedPath;
+        }
+
+        return $resolvedPath.'?'.$query;
     }
 
     private function currentNamePrefix(): string

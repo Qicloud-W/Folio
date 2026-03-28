@@ -9,6 +9,7 @@ use Folio\Core\Exceptions\NotFoundHttpException;
 use Folio\Core\Http\Request;
 use Folio\Core\Http\Response;
 use Folio\Core\Routing\Router;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 
 final class RouterTest extends TestCase
@@ -112,5 +113,51 @@ final class RouterTest extends TestCase
 
         self::assertSame('api.users.show', $router->routeName('GET', '/api/users/42'));
         self::assertSame('health', $router->routeName('GET', '/health'));
+    }
+
+    public function test_router_can_generate_url_from_named_route_with_parameters_and_query_string(): void
+    {
+        $router = new Router();
+
+        $router->group('/api', static function (Router $router): void {
+            $router->group('/v1', static function (Router $router): void {
+                $router->get('/users/{user}', static fn (): Response => Response::json(['ok' => true]))->name('users.show');
+            }, name: 'v1.');
+        }, name: 'api.');
+
+        self::assertSame('/api/v1/users/42?include=roles&page=2', $router->urlFor('api.v1.users.show', [
+            'user' => 42,
+            'page' => 2,
+            'include' => 'roles',
+        ]));
+    }
+
+    public function test_router_url_generation_encodes_path_parameters(): void
+    {
+        $router = new Router();
+        $router->get('/files/{path}', static fn (): Response => Response::json(['ok' => true]))->name('files.show');
+
+        self::assertSame('/files/a%20b', $router->urlFor('files.show', ['path' => 'a b']));
+    }
+
+    public function test_router_url_generation_rejects_missing_required_parameter(): void
+    {
+        $router = new Router();
+        $router->get('/users/{user}', static fn (): Response => Response::json(['ok' => true]))->name('users.show');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('missing required parameter [user]');
+
+        $router->urlFor('users.show');
+    }
+
+    public function test_router_url_generation_rejects_unknown_route_name(): void
+    {
+        $router = new Router();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Route [missing.route] is not defined.');
+
+        $router->urlFor('missing.route');
     }
 }
