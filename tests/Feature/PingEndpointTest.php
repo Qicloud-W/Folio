@@ -16,4 +16,14 @@ final class PingEndpointTest extends KernelTestCase
         self::assertSame('zh-CN', $response->payload()['locale']);
         self::assertSame('GET /api/v1/ping', $response->payload()['meta']['alpha']['request_trace']);
     }
+
+    public function test_dynamic_route_returns_bound_route_parameters(): void
+    {
+        $response = $this->dispatch('GET', '/api/v1/users/42');
+
+        self::assertSame(200, $response->status());
+        self::assertSame('42', $response->payload()['data']['user']);
+        self::assertSame(['user' => '42'], $response->payload()['data']['route_parameters']);
+        self::assertSame('GET /api/v1/users/42', $response->payload()['meta']['alpha']['request_trace']);
+    }
 }
