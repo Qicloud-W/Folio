@@ -8,6 +8,7 @@ use Folio\Core\Config\ConfigRepository;
 use Folio\Core\Exceptions\Handler;
 use Folio\Core\Exceptions\MethodNotAllowedHttpException;
 use Folio\Core\Exceptions\NotFoundHttpException;
+use Folio\Core\Exceptions\ValidationException;
 use Folio\Core\Http\Request;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -64,5 +65,37 @@ final class HandlerTest extends TestCase
 
         self::assertArrayNotHasKey('meta', $response->payload()['error']);
         self::assertSame(['should_report' => false], $response->payload()['error']['report']);
+    }
+
+    public function test_validation_exception_uses_unified_json_error_boundary(): void
+    {
+        $handler = new Handler(new ConfigRepository(['app' => ['debug' => false]]));
+        $request = new Request('POST', '/api/v1/users', [], [], ['name' => 123]);
+
+        $response = $handler->render($request, new ValidationException([
+            'name' => ['The field must be a string.'],
+        ]));
+
+        self::assertSame(422, $response->status());
+        self::assertSame(
+            [
+                'error' => [
+                    'code' => 'VALIDATION_FAILED',
+                    'message' => 'The given data was invalid.',
+                    'meta' => [
+                        'errors' => [
+                            'name' => ['The field must be a string.'],
+                        ],
+                    ],
+                    'context' => ['method' => 'POST', 'path' => '/api/v1/users'],
+                    'report' => ['should_report' => false],
+                    'render' => [
+                        'status' => 422,
+                        'headers' => [],
+                    ],
+                ],
+            ],
+            $response->payload()
+        );
     }
 }
